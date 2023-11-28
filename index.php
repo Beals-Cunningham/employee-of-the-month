@@ -9,13 +9,47 @@
 </head>
 <body>
 
-    <?php
-    //TODO: get data from database
-        $ipAddress = $_SERVER['REMOTE_ADDR'];
-        $thisMonth = date('m');
+<?php
+$file = file_get_contents('.env');
+$lines = explode("\n", $file);
+
+$servername = "";
+$username = "";
+$password = "";
+$dbname = "";
+
+foreach ($lines as $line) {
+    if (strpos($line, "SERVERNAME") !== false) {
+        $servername = trim(str_replace("SERVERNAME=", "", $line));
+    } elseif (strpos($line, "USERNAME") !== false) {
+        $username = trim(str_replace("USERNAME=", "", $line));
+    } elseif (strpos($line, "PASSWORD") !== false) {
+        $password = trim(str_replace("PASSWORD=", "", $line));
+    } elseif (strpos($line, "DBNAME") !== false) {
+        $dbname = trim(str_replace("DBNAME=", "", $line));
+    }
+}
+
+$conn = new mysqli($servername, $username, $password, $dbname);
+if ($conn->connect_error) {
+    die("Connection failed: " . $conn->connect_error);
+}
+
+$ipAddress = $_SERVER['REMOTE_ADDR'];
+$thisMonth = date('m');
+
+$sql = "SELECT * FROM votes WHERE vote_from_ip = '$ipAddress' AND vote_month = '$thisMonth'";
+$result = $conn->query($sql);
+if ($result && $result->num_rows > 0) {
+    $hasVotedFromThisIpThisMonth = true;
+}
+
+        
+
         $timeLeft = getTimeLeftInMonth();
 
-        function getTimeLeftInMonth() {
+        function getTimeLeftInMonth()
+        {
             $now = new DateTime();
             $endOfMonth = new DateTime('last day of this month');
             $endOfMonth->setTime(12, 0, 0);
@@ -35,55 +69,55 @@
         if ($hasVotedFromThisIpThisMonth) {
             echo '<h2>You have already voted this month.</h2>';
             exit;
-        } else if($timeLeft['days'] < 1 && $timeLeft['hours'] < 1) {
+        } else if ($timeLeft['days'] < 1 && $timeLeft['hours'] < 1) {
             echo '<h2>Voting is closed for this month.</h2>';
             exit;
         } else {
             echo '
             <div>
-    <h1>Vote for Employee of the Month</h1>
-    <form>
-        <select name="employee" id="employee">
-            <option value="0">Select an Employee</option>
-        </select>
-        <input type="submit" value="Submit">
-    </form>
-</div >
-<div id = "results-div" style = "display:none">
-<h2>Current results</h2>
-<h3>In the lead: <span id = "winner"></span></h3>
-    <div class="chart-container" style="position: relative; max-height:50vh;">
-        <canvas id="chart"></canvas>
-    </div>
-    <div>
-            
-    </div>
-</div>
-<h3>Voting closes in: '.$timeLeft['days'].' days, '.$timeLeft['hours'].' hours'
-            .'</h3>
-            <small>Log in to see results: <input id = "password"><button id = "submit-password">Log in</button></small></div>
-<div>
-';
+        <h1>Vote for Employee of the Month</h1>
+        <form>
+            <select name="employee" id="employee">
+                <option value="0">Select an Employee</option>
+            </select>
+            <input type="submit" value="Submit">
+        </form>
+        </div >
+        <div id = "results-div" style = "display:none">
+        <h2>Current results</h2>
+        <h3>In the lead: <span id = "winner"></span></h3>
+        <div class="chart-container" style="position: relative; max-height:50vh;">
+            <canvas id="chart"></canvas>
+        </div>
+        <div>
+
+        </div>
+        </div>
+        <h3>Voting closes in: ' . $timeLeft['days'] . ' days, ' . $timeLeft['hours'] . ' hours'
+                . '</h3>
+                <small id = "loginsmall">Log in to see results: <input id = "password"><button id = "submit-password">Log in</button></small></div>
+        <div>
+        ';
         }
-    ?>
+        ?>
 
-<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+        <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
-<script>
-  const ctx = document.getElementById('chart');
-const labels = [
-    'Sayer',
-    'Abbie',
-    'Amelia',
-    'Ashley',
-    'Avery',
-    'Claire',
-    'Don',
-    'Jamie',
-    'Joseph',
-    'KaCee',
-    'Karsten',
-    'Kellen',
+        <script>
+        const ctx = document.getElementById('chart');
+        const labels = [
+            'Sayer',
+            'Abbie',
+            'Amelia',
+            'Ashley',
+            'Avery',
+            'Claire',
+            'Don',
+            'Jamie',
+            'Joseph',
+            'KaCee',
+            'Karsten',
+            'Kellen',
     'Kelli',
     'Kelsi',
     'Kris',
@@ -126,11 +160,7 @@ const labels = [
 
 <script>
     populateForm()
-    function showResults(){
-        let password = document.getElementById('password').value
-        
-        //read the correct password from employee-of-the-month.env
-        <?php
+    <?php
             $file = file_get_contents('.env');
             $lines = explode("\n", $file);
             foreach ($lines as $line) {
@@ -139,17 +169,27 @@ const labels = [
                     $password = $parts[1];
                 }
             }
-            echo 'let correct_password = "'.$password.'";';
+            echo 'const correct_password = "'.$password.'";';
         ?>
+    function showResults(){
+        let password = document.getElementById('password').value
+        
         if (password === correct_password){
             document.getElementById('results-div').style.display = 'block'
             document.getElementById('password').style.display = 'none'
             document.getElementById('submit-password').style.display = 'none'
-            initChart()
+            document.getElementById('loginsmall').style.display = 'none'
+            initChart(correct_password)
             populateForm()
             getWinner()
         }
     }
+
+    let submitPassword = document.getElementById('submit-password')
+    submitPassword.addEventListener('click', function(e){
+        e.preventDefault()
+        showResults()
+    })
 
 
     function populateForm(){
@@ -163,7 +203,7 @@ const labels = [
         }
     }
 
-    function initChart(){
+    function initChart(p){
         let labels = pie.data.labels
         let data = pie.data.datasets[0].data
         let backgroundColor = pie.data.datasets[0].backgroundColor
@@ -173,8 +213,24 @@ const labels = [
         
 
         for (let i = 0; i < labels.length; i++) {
-            //TODO: get data from database
-            data[i] = 0
+            data[i] = fetch(
+                'get-votes.php',
+                {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        employee: labels[i],
+                        password: p
+                    })
+                }
+            ).then(response => response.json()).then(data => {
+                return data
+            }).catch(err => {
+                console.log(err)
+            }
+            )
             backgroundColor[i] = stops[i]
         }
         pie.update()
@@ -214,7 +270,21 @@ const labels = [
         let submit = document.querySelector('input[type="submit"]')
         submit.disabled = true
         select.disabled = true
-        //TODO: send data to database
+        let ipAddress = '<?php echo $ipAddress ?>'
+        let thisMonth = '<?php echo $thisMonth ?>'
+        fetch('submit-vote.php', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                vote_for: employee,
+                vote_from_ip: ipAddress,
+                vote_month: thisMonth
+            })
+        }).catch(err => {
+            console.log(err)
+        })
     }
 
     let form = document.querySelector('form')
