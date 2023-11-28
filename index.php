@@ -77,9 +77,14 @@ if ($result && $result->num_rows > 0) {
             <div>
         <h1>Vote for Employee of the Month</h1>
         <form>
-            <select name="employee" id="employee">
-                <option value="0">Select an Employee</option>
+            <div style = "display:flex;gap:12px;">
+            <label for="employee" style = "margin-top:auto;margin-bottom:auto;">Vote for</label>
+            <select name="employee" id="employee" required>
             </select>
+            <label for="employee-from" style = "margin-top:auto;margin-bottom:auto;">Your name</label>
+            <select name="employee-from" id="employee-from" required>
+            </select>
+            </div>
             <input type="submit" value="Submit">
         </form>
         </div >
@@ -200,12 +205,14 @@ if ($result && $result->num_rows > 0) {
 
     function populateForm(){
         let select = document.getElementById('employee')
+        let select_from = document.getElementById('employee-from')
 
         for (let i = 0; i < labels.length; i++) {
             let option = document.createElement('option')
             option.value = labels[i]
             option.text = labels[i]
             select.appendChild(option)
+            select_from.appendChild(option.cloneNode(true))
         }
     }
 
@@ -273,6 +280,8 @@ if ($result && $result->num_rows > 0) {
     async function submitVote(){
         let select = document.getElementById('employee')
         let employee = select.value
+        let select_from = document.getElementById('employee-from')
+        let employee_from = select_from.value
         let labels = pie.data.labels
         let data = pie.data.datasets[0].data
         let index = labels.indexOf(employee)
@@ -288,7 +297,8 @@ if ($result && $result->num_rows > 0) {
                 'Content-Type': 'application/json'
             },
             body: JSON.stringify({
-                vote_for: employee
+                vote_for: employee,
+                vote_from: employee_from
             })
         }).catch(err => {
             console.log(err)
