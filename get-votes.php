@@ -9,6 +9,39 @@ $password = "";
 $dbname = "";
 $employee_of_the_month_password = "";
 
+$all_employees = 
+    [
+        'Sayer',
+        'Abbie',
+        'Amelia',
+        'Ashley',
+        'Avery',
+        'Claire',
+        'Don',
+        'Jamie',
+        'Joseph',
+        'KaCee',
+        'Karsten',
+        'Kellen',
+'Kelli',
+'Kelsi',
+'Kris',
+'Maddy D.',
+'Madison Z.',
+'Makk',
+'Phil',
+'Mary',
+'Matt',
+'Nick',
+'Paul',
+'Sharon',
+'Tiffani M.',
+'Tomasz',
+'Wes',
+'Yvone',
+'Zak'
+    ];
+
 foreach ($lines as $line) {
     if (strpos($line, "SERVERNAME") !== false) {
         $servername = trim(str_replace("SERVERNAME=", "", $line));
@@ -24,6 +57,8 @@ foreach ($lines as $line) {
 }
 
 
+$votes_per_employee = [];
+
 $conn = new mysqli($servername, $username, $password, $dbname);
 if ($conn->connect_error) {
     die("Connection failed: " . $conn->connect_error);
@@ -37,16 +72,17 @@ $postedPassword = $entityBody['password'];
 if ($postedPassword !== $employee_of_the_month_password) {
     die("Incorrect password");
 } else {
-    $employee = $entityBody['employee'];
-    if ($employee) {
+    foreach($all_employees as $employee) {
         $sql = "SELECT * FROM votes WHERE vote_for = '$employee'";
         $result = $conn->query($sql);
         if ($result && $result->num_rows > 0) {
             $votes = $result->num_rows;
-            echo $votes;
+            $votes_per_employee[$employee] = $votes;
         } else {
-            echo 0;
+            $votes_per_employee[$employee] = 0;
         }
     }
+    arsort($votes_per_employee);
+    echo json_encode($votes_per_employee);
 } 
 

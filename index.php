@@ -85,7 +85,7 @@ if ($result && $result->num_rows > 0) {
         </div >
         <div id = "results-div" style = "display:none">
         <h2>Current results</h2>
-        <h3>In the lead: <span id = "winner"></span></h3>
+        <h3 id = "winner-text">In the lead: <span id = "winner"></span></h3>
         <div class="chart-container" style="position: relative; max-height:50vh;">
             <canvas id="chart"></canvas>
         </div>
@@ -172,6 +172,7 @@ if ($result && $result->num_rows > 0) {
             echo 'const correct_password = "'.$password.'";';
         ?>
     function showResults(){
+
         let password = document.getElementById('password').value
         
         if (password === correct_password){
@@ -179,15 +180,20 @@ if ($result && $result->num_rows > 0) {
             document.getElementById('password').style.display = 'none'
             document.getElementById('submit-password').style.display = 'none'
             document.getElementById('loginsmall').style.display = 'none'
-            initChart(correct_password)
-            populateForm()
-            getWinner()
+            initChart(correct_password).then(() => {
+                populateForm()
+                pie.update()
+                getWinner()
+            })
+
         }
     }
 
     let submitPassword = document.getElementById('submit-password')
     submitPassword.addEventListener('click', function(e){
         e.preventDefault()
+        let winnerText = document.getElementById('winner-text')
+        winnerText.innerText = 'Loading...'
         showResults()
     })
 
@@ -203,37 +209,43 @@ if ($result && $result->num_rows > 0) {
         }
     }
 
-    function initChart(p){
+    async function initChart(p){
+        let winnerText = document.getElementById('winner-text')
+        winnerText.innerText = 'Loading...'
         let labels = pie.data.labels
         let data = pie.data.datasets[0].data
         let backgroundColor = pie.data.datasets[0].backgroundColor
         let color1 = chroma.random()
         let color2 = chroma.random()
         let stops = chroma.scale([color1, color2]).mode('lch').colors(labels.length)
+
+        tempData = await fetch(
+            'get-votes.php',
+            {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    password: p
+                })
+            }
+        ).then(response => response.json()).then(d => {
+            console.log(d)
+            return d
+        }).catch(err => {
+            console.log(err)
+        })
+
         
 
         for (let i = 0; i < labels.length; i++) {
-            data[i] = fetch(
-                'get-votes.php',
-                {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify({
-                        employee: labels[i],
-                        password: p
-                    })
-                }
-            ).then(response => response.json()).then(data => {
-                return data
-            }).catch(err => {
-                console.log(err)
-            }
-            )
+            winnerText.innerText = 'Loading...'
+            data[i] = tempData[labels[i]]
+
             backgroundColor[i] = stops[i]
         }
-        pie.update()
+        
     }
 
     function getWinner(){
@@ -248,17 +260,17 @@ if ($result && $result->num_rows > 0) {
                 winner = labels[i]
             }
         }
-        let winnerElement = document.getElementById('winner')
         if (winner){
             winner = winner + ' with ' + max + ' votes!'
         } else {
             winner = 'No votes yet!'
         }
-        winnerElement.innerText = winner
+        let winnerText = document.getElementById('winner-text')
+        winnerText.innerText = 'In the lead: ' + winner
 
     }
 
-    function submitVote(){
+    async function submitVote(){
         let select = document.getElementById('employee')
         let employee = select.value
         let labels = pie.data.labels
@@ -270,21 +282,29 @@ if ($result && $result->num_rows > 0) {
         let submit = document.querySelector('input[type="submit"]')
         submit.disabled = true
         select.disabled = true
-        let ipAddress = '<?php echo $ipAddress ?>'
-        let thisMonth = '<?php echo $thisMonth ?>'
-        fetch('submit-vote.php', {
+        let r = await fetch('submit-vote.php', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json'
             },
             body: JSON.stringify({
-                vote_for: employee,
-                vote_from_ip: ipAddress,
-                vote_month: thisMonth
+                vote_for: employee
             })
         }).catch(err => {
             console.log(err)
+        }).then((response) => {
+            console.log(response)
+            return response.text()
         })
+        console.log(r)
+            if (r === 'You have already submitted a vote this month.'){
+                let form = document.querySelector('form')
+                form.innerHTML = '<h2>You have already submitted a vote this month.</h2>'
+                
+            } else {
+                let form = document.querySelector('form')
+                form.innerHTML = '<h2>Vote submitted successfully</h2>'
+            }
     }
 
     let form = document.querySelector('form')
