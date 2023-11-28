@@ -77,15 +77,16 @@ if ($result && $result->num_rows > 0) {
             <div>
         <h1>Vote for Employee of the Month</h1>
         <form>
-            <div style = "display:flex;gap:12px;">
+            <div style = "display:flex;gap:4px;">
             <label for="employee" style = "margin-top:auto;margin-bottom:auto;">Vote for</label>
             <select name="employee" id="employee" required>
             </select>
             <label for="employee-from" style = "margin-top:auto;margin-bottom:auto;">Your name</label>
             <select name="employee-from" id="employee-from" required>
             </select>
-            </div>
             <input type="submit" value="Submit">
+            </div>
+            
         </form>
         </div >
         <div id = "results-div" style = "display:none">
