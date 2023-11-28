@@ -73,7 +73,8 @@ if ($postedPassword !== $employee_of_the_month_password) {
     die("Incorrect password");
 } else {
     foreach($all_employees as $employee) {
-        $sql = "SELECT * FROM votes WHERE vote_for = '$employee'";
+        $month = date('m');
+        $sql = "SELECT * FROM votes WHERE vote_for = '$employee' AND vote_month = '$month'";
         $result = $conn->query($sql);
         if ($result && $result->num_rows > 0) {
             $votes = $result->num_rows;
