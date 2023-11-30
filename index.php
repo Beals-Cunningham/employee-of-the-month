@@ -223,8 +223,14 @@ if ($result && $result->num_rows > 0) {
         let labels = pie.data.labels
         let data = pie.data.datasets[0].data
         let backgroundColor = pie.data.datasets[0].backgroundColor
+        let deltae = 0
         let color1 = chroma.random()
         let color2 = chroma.random()
+        while (deltae < 40) {
+            color2 = chroma.random()
+            deltae = chroma.deltaE(color1, color2)
+        }
+        
         let stops = chroma.scale([color1, color2]).mode('lch').colors(labels.length)
 
         tempData = await fetch(
